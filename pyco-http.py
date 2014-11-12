@@ -22,6 +22,8 @@ Why do this?
 import sys
 import socket
 import time
+import urllib
+import urlparse
 
 class PycoHTTP:
     def __init__(self):
@@ -89,9 +91,15 @@ class PycoHTTP:
             if not data:
                 break
             received += data
+            if len(received) > self.max_request_len:
+                received = received[:self.max_request_len]
+                break
             time.sleep(.00001)
 
-        # We don't support POST so no need for request data
+        if received.strip() == "":
+            return False
+
+        # We don't support POST so get rid of request body
         needed = received.split(self.eol*2)[0]
 
         lines = needed.split(self.eol)
@@ -121,24 +129,26 @@ class PycoHTTP:
         """Handle a HTTP connection."""
         self.log('Connected with ' + addr[0] + ':' + str(addr[1]))
         request = self.get_request_data(conn)
-        if self.request_handler:
-            response = self.request_handler(request)
-            self.respond(conn, response)
+        if request:
+            if self.request_handler:
+                response = self.request_handler(request)
+                self.respond(conn, response)
         conn.close()
 
 # Example for a request handler
 def handle_request(request):
     front_uris = ["/", "/index.html"]
-    if request["uri"] in front_uris:
-        body = "<h1>Hello World!</h1>"
+    url = urlparse.urlparse(request["uri"])
+    query = urllib.unquote(url.query)
+    if url.path in front_uris:
         response = {
             "status": 200,
-            "data": body
+            "data": '<h1>Hello World!</h1>'
         }
     else:
         response = {
             "status": 404,
-            "data": "Sorry, can't find that (404)."
+            "data": 'Sorry, not found (404). <a href="/">Front page</a>'
         }
     return response
 
