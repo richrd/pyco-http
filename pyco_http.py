@@ -7,9 +7,17 @@ import select
 import urllib
 import urlparse
 
+class Request:
+    def __init__ (self):
+        self.client = (None, None) # IP / Port
+        self.type = ""
+        self.uri = ""
+        self.headers = {}
+
 class PycoHTTP:
     def __init__(self):
         self.running = 0
+        self.logging = 0
         self.host = ""
         self.port = 8080
         self.socket = None
@@ -25,7 +33,8 @@ class PycoHTTP:
         self.request_handler = None
 
     def log(self, s):
-        print s
+        if self.logging:
+            print s
 
     def set_handler(self, request_handler):
         """Set the callback function for handling requests."""
@@ -109,23 +118,25 @@ class PycoHTTP:
         first = lines[0].split(" ")
         lines.pop(0)
 
+        request = Request()
+
         # Extract request data
-        req_type = first[0]
-        req_url = first[1]
+        request.type = first[0]
+        request.uri = first[1]
+        request.client = addr
 
         # Get request heders
         headers = self.parse_headers(lines)
-        request = {
-            "client": addr,
-            "type": req_type,
-            "uri": req_url,
-            "headers": headers,
-        }
-
+        request.headers = headers
+        
         return request
 
     def respond(self, conn, response):
-        """Responde to a request."""
+        """Respond to a request."""
+
+        # Set response defaults
+        if not "status" in response.keys():
+            response["status"] = "200"
 
         # Build headers
         header_lines = []
