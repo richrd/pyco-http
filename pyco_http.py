@@ -6,6 +6,7 @@ import socket
 import select
 import urllib
 import urlparse
+import traceback
 
 class Request:
     def __init__ (self):
@@ -17,7 +18,7 @@ class Request:
 class PycoHTTP:
     def __init__(self):
         self.running = 0
-        self.logging = 0
+        self.logging = 1
         self.host = ""
         self.port = 8080
         self.socket = None
@@ -36,13 +37,19 @@ class PycoHTTP:
         if self.logging:
             print s
 
+    def error(self, s):
+        print s
+
+    def get_error_info(self):
+        msg = str(traceback.format_exc()) + "\n" + str(sys.exc_info())
+        return msg
+
     def set_handler(self, request_handler):
         """Set the callback function for handling requests."""
         self.request_handler = request_handler
 
     def start(self, blocking=False):
         """Start the server."""
-        self.running = 1
         self.socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
 
         # Avoid "address already in use"
@@ -58,6 +65,7 @@ class PycoHTTP:
         self.socket.listen(self.max_queued_conns)
         self.log('Socket now listening')
 
+        self.running = 1
         if blocking:
             self.serve_blocking()
         return True
@@ -70,14 +78,20 @@ class PycoHTTP:
         """Needs to be called periodically to receive connections."""
         readable, writable, errored = select.select([self.socket], [], [], self.select_timeout)
         if self.socket in readable:
+            # try:
             conn, addr = self.socket.accept()
             self.handle_connection(conn, addr)
+            # except:
+                # self.error(self.get_error_info())
 
     def serve_blocking(self):
         """Accept connections in blocking mode."""
         while self.running:
+            # try:
             conn, addr = self.socket.accept()
             self.handle_connection(conn, addr)
+            # except:
+                # self.error(self.get_error_info())
 
     def parse_headers(self, lines):
         """Parse headers from list of lines in response."""
@@ -207,7 +221,8 @@ def handle_request(request):
 if __name__ == "__main__":
     srv = PycoHTTP()
     srv.set_handler(handle_request)
-    srv.start()
-    #srv.start(True) # Add true for a blocking server
-    while True:
-        srv.serve()
+    srv.start(True) # Add true for a blocking server
+    # Otherwise use a loop like this:    
+    # srv.start()
+    # while srv.running:
+    #    srv.serve()
