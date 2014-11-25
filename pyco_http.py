@@ -18,7 +18,7 @@ class Request:
 class PycoHTTP:
     def __init__(self):
         self.running = 0
-        self.logging = 1
+        self.logging = 0
         self.host = ""
         self.port = 8080
         self.socket = None
@@ -78,20 +78,20 @@ class PycoHTTP:
         """Needs to be called periodically to receive connections."""
         readable, writable, errored = select.select([self.socket], [], [], self.select_timeout)
         if self.socket in readable:
-            # try:
-            conn, addr = self.socket.accept()
-            self.handle_connection(conn, addr)
-            # except:
-                # self.error(self.get_error_info())
+            try:
+                conn, addr = self.socket.accept()
+                self.handle_connection(conn, addr)
+            except:
+                self.error(self.get_error_info())
 
     def serve_blocking(self):
         """Accept connections in blocking mode."""
         while self.running:
-            # try:
-            conn, addr = self.socket.accept()
-            self.handle_connection(conn, addr)
-            # except:
-                # self.error(self.get_error_info())
+            try:
+                conn, addr = self.socket.accept()
+                self.handle_connection(conn, addr)
+            except:
+                self.error(self.get_error_info())
 
     def parse_headers(self, lines):
         """Parse headers from list of lines in response."""
@@ -199,12 +199,10 @@ def handle_request(request):
 
     if url.path in front_uris:
         response = {
-            "status": 200,
             "data": '<h1>Hello World!</h1>'
         }
     elif url.path == "/text.txt":
         response = {
-            "status": 200,
             "headers": {"Content-Type": "text/plain"},
             "data": 'Hello World!\nNew line?'
         }
@@ -212,7 +210,7 @@ def handle_request(request):
         response = False # Don't respond, just close connection
     else:
         response = {
-            "status": 404,
+            "status": 404, # Default status is 200
             "data": 'Sorry, not found (404). <a href="/">Front page</a>'
         }
 
