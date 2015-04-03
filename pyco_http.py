@@ -109,7 +109,10 @@ class PycoHTTP:
         # Loop and append received data until sufficent data is received
         received = ""
         while received[-4:] != self.eol*2:
-            data = conn.recv(1024)
+            try:
+                data = conn.recv(1024)
+            except:
+                return received
             if not data:
                 break
             received += data
