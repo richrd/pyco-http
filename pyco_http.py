@@ -134,13 +134,15 @@ class PycoHTTP:
     def serve_blocking(self):
         """Accept connections in blocking mode."""
         while self.running:
-            try:
-                conn, addr = self.socket.accept()
-                self.handle_connection(conn, addr)
-            except KeyboardInterrupt:
-                return False
-            except:
-                self.error(self.get_error_info())
+            readable, writable, errored = select.select([self.socket], [], [], self.select_timeout)
+            if self.socket in readable:
+                try:
+                    conn, addr = self.socket.accept()
+                    self.handle_connection(conn, addr)
+                except KeyboardInterrupt:
+                    return False
+                except:
+                    self.error(self.get_error_info())
 
     def parse_headers(self, lines):
         """Parse headers from list of lines in response."""
