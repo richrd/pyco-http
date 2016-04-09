@@ -45,8 +45,8 @@ class PycoHTTP:
         self.headers = {
             "Server": "PycoHTTP",
             "Connection": "close",
-            "Content-Type": "text/html",
-            "Content-Encoding": "utf-8",
+            #"Content-Type": "text/html",
+            # "Content-Encoding": "utf-8",
         }
         self.request_handler = None
 
@@ -103,7 +103,8 @@ class PycoHTTP:
         try:
             self.socket.bind((self.host, self.port))
         except socket.error as msg:
-            self.log('Bind failed. Error Code : ' + str(msg[0]) + ' Message ' + msg[1])
+            # self.log('Bind failed. Error Code : ' + str(msg[0]) + ' Message ' + msg[1])
+            self.log('Bind failed. Error: ' + str(msg))
             return False
 
         self.socket.listen(self.max_queued_conns)
@@ -227,7 +228,7 @@ class PycoHTTP:
         # HTTP/1.0 200 OK
         data = "HTTP/1.1 " + str(response["status"]) + self.eol
         data += self.eol.join(header_lines) + (self.eol*2)
-        data += response["data"]
+        payload = response["data"]
 
         # Send the entire response
         # FIXME: may want to check for success and retry when necessary
@@ -235,8 +236,9 @@ class PycoHTTP:
         while i < 11:
             self.log("Trying to respond with data #{}".format(i))
             # try:
-            if self.send_all_to_socket(data.encode("utf-8"), conn):
-             # conn.sendall(data.encode("utf-8")) is None:
+            # if self.send_all_to_socket(data.encode("utf-8"), conn):
+            # if self.send_all_to_socket(data.encode("utf-8") + payload, conn):
+            if self.send_all_to_socket(bytes(data, "utf-8") + payload, conn):
                 return True
             # except:
                 # self.log("Attempt #{} failed...".format(i))
